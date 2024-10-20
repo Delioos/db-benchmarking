@@ -2,6 +2,7 @@ import random
 from datetime import datetime, timedelta
 from typing import List, Dict
 import json
+from tqdm import tqdm
 
 # Constants
 NUM_BLOCKS = 1000000
@@ -18,7 +19,7 @@ def generate_hash() -> str:
 
 def generate_blocks() -> List[Dict]:
     blocks = []
-    for i in range(NUM_BLOCKS):
+    for i in tqdm(range(NUM_BLOCKS), desc="Generating blocks"):
         block_time = START_DATE + timedelta(seconds=i*15)  # Assuming 15-second block time
         block = {
             "block_number": i,
@@ -33,7 +34,7 @@ def generate_blocks() -> List[Dict]:
 
 def generate_transactions(blocks: List[Dict]) -> List[Dict]:
     transactions = []
-    for block in blocks:
+    for block in tqdm(blocks, desc="Generating transactions"):
         for _ in range(TRANSACTIONS_PER_BLOCK):
             tx = {
                 "block": block["block_number"],
@@ -49,7 +50,7 @@ def generate_transactions(blocks: List[Dict]) -> List[Dict]:
 
 def generate_transfers(blocks: List[Dict]) -> List[Dict]:
     transfers = []
-    for block in blocks:
+    for block in tqdm(blocks, desc="Generating transfers"):
         for _ in range(TRANSFERS_PER_BLOCK):
             transfer = {
                 "tx_hash": generate_hash(),
@@ -64,7 +65,7 @@ def generate_transfers(blocks: List[Dict]) -> List[Dict]:
 
 def generate_pools(blocks: List[Dict]) -> List[Dict]:
     pools = []
-    for block in blocks:
+    for block in tqdm(blocks, desc="Generating pools"):
         for _ in range(POOLS_PER_BLOCK):
             pool = {
                 "deployer": generate_address(),
@@ -84,15 +85,23 @@ def main():
     transfers = generate_transfers(blocks)
     pools = generate_pools(blocks)
 
-    # Save data to JSON files
-    with open('blocks.json', 'w') as f:
-        json.dump(blocks, f)
-    with open('transactions.json', 'w') as f:
-        json.dump(transactions, f)
-    with open('transfers.json', 'w') as f:
-        json.dump(transfers, f)
-    with open('pools.json', 'w') as f:
-        json.dump(pools, f)
+    print("Saving data to files...")
+    with tqdm(total=4, desc="Saving files") as pbar:
+        with open('blocks.json', 'w') as f:
+            json.dump(blocks, f)
+        pbar.update(1)
+        
+        with open('transactions.json', 'w') as f:
+            json.dump(transactions, f)
+        pbar.update(1)
+        
+        with open('transfers.json', 'w') as f:
+            json.dump(transfers, f)
+        pbar.update(1)
+        
+        with open('pools.json', 'w') as f:
+            json.dump(pools, f)
+        pbar.update(1)
 
     print(f"Generated {len(blocks)} blocks")
     print(f"Generated {len(transactions)} transactions")
