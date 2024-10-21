@@ -1,7 +1,6 @@
-use thiserror::Error;
-use tokio_postgres::{Error, NoTls};
+use tracing::{debug, error};
 
-#[derive(Error, Debug)]
+#[derive(thiserror::Error, Debug)]
 pub enum BenchmarkError {
     #[error("Environment variable not found: {0}")]
     EnvVarError(#[from] std::env::VarError),
@@ -14,6 +13,9 @@ pub enum BenchmarkError {
 
     #[error("IO error: {0}")]
     IoError(#[from] std::io::Error),
+
+    #[error("SSL error: Could not create Tls ")]
+    TlsError(),
 
     #[error("Unknown error occurred")]
     Unknown,

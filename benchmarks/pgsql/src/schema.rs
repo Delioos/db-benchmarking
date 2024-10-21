@@ -1,5 +1,5 @@
-use crate::error::{BenchmarkError, Result};
-use postgres::{Client, NoTls};
+use crate::error::Result;
+use tokio_postgres::Client;
 
 pub async fn create_tables(client: &mut Client) -> Result<()> {
     client.execute(
@@ -13,7 +13,7 @@ pub async fn create_tables(client: &mut Client) -> Result<()> {
             updated_at TIMESTAMPTZ NOT NULL
         )",
         &[],
-    )?;
+    );
 
     client.execute(
         "CREATE TABLE IF NOT EXISTS transactions (
@@ -27,7 +27,7 @@ pub async fn create_tables(client: &mut Client) -> Result<()> {
             value TEXT NOT NULL
         )",
         &[],
-    )?;
+    );
 
     client.execute(
         "CREATE TABLE IF NOT EXISTS transfers (
@@ -40,7 +40,7 @@ pub async fn create_tables(client: &mut Client) -> Result<()> {
             amount TEXT NOT NULL
         )",
         &[],
-    )?;
+    );
 
     client.execute(
         "CREATE TABLE IF NOT EXISTS s (
@@ -53,7 +53,7 @@ pub async fn create_tables(client: &mut Client) -> Result<()> {
             created_at BIGINT NOT NULL
         )",
         &[],
-    )?;
+    );
 
     Ok(())
 }
