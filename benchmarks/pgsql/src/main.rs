@@ -57,9 +57,17 @@ async fn main() -> error::Result<()> {
     // And then check that we got back the same string we sent over.
     let value: &str = rows[0].get(0);
     assert_eq!(value, "hello world");
+    // Load pools from JSON file
+    let pools: Vec<models::Pool> = match load_json_data("../../data/Spools.json") {
+        Ok(data) => data,
+        Err(e) => {
+            eprintln!("Error loading pools: {}", e);
+            Vec::new()
+        }
+    };
 
     // Load blocks from JSON file
-    let blocks: Vec<models::Block> = match load_json_data("../../data/blocks.json") {
+    let blocks: Vec<models::Block> = match load_json_data("../../data/Sblocks.json") {
         Ok(data) => data,
         Err(e) => {
             eprintln!("Error loading blocks: {}", e);
@@ -69,7 +77,7 @@ async fn main() -> error::Result<()> {
 
     // Load transactions from JSON file
     let transactions: Vec<models::Transaction> =
-        match load_json_data("../../data/transactions.json") {
+        match load_json_data("../../data/Stransactions.json") {
             Ok(data) => data,
             Err(e) => {
                 eprintln!("Error loading transactions: {}", e);
@@ -78,19 +86,10 @@ async fn main() -> error::Result<()> {
         };
 
     // Load transfers from JSON file
-    let transfers: Vec<models::Transfer> = match load_json_data("../../data/transfers.json") {
+    let transfers: Vec<models::Transfer> = match load_json_data("../../data/Stransfers.json") {
         Ok(data) => data,
         Err(e) => {
             eprintln!("Error loading transfers: {}", e);
-            Vec::new()
-        }
-    };
-
-    // Load pools from JSON file
-    let pools: Vec<models::Pool> = match load_json_data("../../data/pools.json") {
-        Ok(data) => data,
-        Err(e) => {
-            eprintln!("Error loading pools: {}", e);
             Vec::new()
         }
     };

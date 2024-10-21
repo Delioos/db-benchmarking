@@ -5,7 +5,12 @@ import json
 from tqdm import tqdm
 
 # Constants
-NUM_BLOCKS = 1000000
+# NUM_BLOCKS = 1000000
+# TRANSACTIONS_PER_BLOCK = 10
+# TRANSFERS_PER_BLOCK = 5
+# POOLS_PER_BLOCK = 2
+# START_DATE = datetime(2023, 1, 1)
+NUM_BLOCKS = 2
 TRANSACTIONS_PER_BLOCK = 10
 TRANSFERS_PER_BLOCK = 5
 POOLS_PER_BLOCK = 2
@@ -85,21 +90,22 @@ def main():
     transfers = generate_transfers(blocks)
     pools = generate_pools(blocks)
 
+    # 'S' stands for small. This is to test the the benchmarking on sample data to verify run integity
     print("Saving data to files...")
     with tqdm(total=4, desc="Saving files") as pbar:
-        with open('blocks.json', 'w') as f:
+        with open('Sblocks.json', 'w') as f:
             json.dump(blocks, f)
         pbar.update(1)
         
-        with open('transactions.json', 'w') as f:
+        with open('Stransactions.json', 'w') as f:
             json.dump(transactions, f)
         pbar.update(1)
         
-        with open('transfers.json', 'w') as f:
+        with open('Stransfers.json', 'w') as f:
             json.dump(transfers, f)
         pbar.update(1)
         
-        with open('pools.json', 'w') as f:
+        with open('Spools.json', 'w') as f:
             json.dump(pools, f)
         pbar.update(1)
 
