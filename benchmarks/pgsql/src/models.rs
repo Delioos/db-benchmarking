@@ -6,16 +6,16 @@ pub struct Block {
     pub block_number: i32,
     pub block_hash: String,
     pub parent_hash: String,
-    pub block_timestamp: DateTime<Utc>,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
+    pub block_timestamp: String,
+    pub created_at: String,
+    pub updated_at: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Transaction {
     pub block: i32,
     pub index: i32,
-    pub timestamp: DateTime<Utc>,
+    pub timestamp: String,
     pub hash: String,
     pub from: String,
     pub to: String,
