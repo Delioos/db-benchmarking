@@ -62,12 +62,10 @@ async fn main() -> error::Result<()> {
         Err(e) => return Err(e),
     }
 
-    todo!();
-
     let start = Instant::now();
     // Load blocks from JSON file
-    let prefix: &str = "../../data/S"; // remove the S to x100 the data size
-                                       // let prefix: &str = "../../data/";
+    // let prefix: &str = "../../data/S"; // remove the S to x100 the data size
+    let prefix: &str = "../../data/";
     let blocks: Vec<models::Block> = match load_json_data(&format!("{}blocks.json", prefix)) {
         Ok(data) => data,
         Err(e) => {
@@ -114,10 +112,8 @@ async fn main() -> error::Result<()> {
 
     // backtest
 
-    // Benchmark Operations
-    let start = Instant::now();
-
     // 1. Bulk Insert Test
+    let start = Instant::now();
     let total_records = blocks.len();
     let mut batch_size = total_records / 100;
     if batch_size == 0 {
@@ -125,17 +121,25 @@ async fn main() -> error::Result<()> {
     }
     let num_batches = (total_records + batch_size - 1) / batch_size;
 
+    println!("\nStarting Bulk Insert Tests:");
+    println!("Total batches: {}", num_batches);
+    println!("Batch size: {}", batch_size);
+
     for i in 0..num_batches {
         let start_index = i * batch_size;
-        let end_index = (i + 1) * batch_size;
+        let end_index = std::cmp::min((i + 1) * batch_size, total_records);
 
+        // Get batches for each type
         let block_batch = &blocks[start_index..end_index];
-        let _transaction_batch = &transactions[start_index..end_index];
-        let _transfer_batch = &transfers[start_index..end_index];
-        let _pool_batch = &pools[start_index..end_index];
+        let transaction_batch =
+            &transactions[start_index..std::cmp::min(end_index, transactions.len())];
+        let transfer_batch = &transfers[start_index..std::cmp::min(end_index, transfers.len())];
+        let pool_batch = &pools[start_index..std::cmp::min(end_index, pools.len())];
 
-        // Perform bulk inserts using BinaryCopyInWriter
-        let sink = client.copy_in("COPY blocks (block_number, block_hash, parent_hash, block_timestamp, created_at, updated_at) FROM STDIN BINARY").await?;
+        // 1. Bulk insert blocks
+        let sink = client
+            .copy_in("COPY blocks (block_number, block_hash, parent_hash, block_timestamp, created_at, updated_at) FROM STDIN BINARY")
+            .await?;
         let types = &[
             Type::INT4,
             Type::TEXT,
@@ -145,10 +149,7 @@ async fn main() -> error::Result<()> {
             Type::TEXT,
         ];
         let writer = BinaryCopyInWriter::new(sink, types);
-
         pin_mut!(writer);
-
-        // prepare data
 
         for block in block_batch {
             writer
@@ -165,18 +166,116 @@ async fn main() -> error::Result<()> {
         }
         writer.as_mut().finish().await?;
 
-        // Repeat the process for transactions, transfers, and pools
-        // ...
+        // 2. Bulk insert transactions
+        let sink = client
+            .copy_in("COPY transactions (block, index, timestamp, hash, from_address, to_address, value) FROM STDIN BINARY")
+            .await?;
+        let types = &[
+            Type::INT4,
+            Type::INT4,
+            Type::TEXT,
+            Type::TEXT,
+            Type::TEXT,
+            Type::TEXT,
+            Type::TEXT,
+        ];
+        let writer = BinaryCopyInWriter::new(sink, types);
+        pin_mut!(writer);
+
+        for tx in transaction_batch {
+            writer
+                .as_mut()
+                .write(&[
+                    &tx.block as &(dyn ToSql + Sync),
+                    &tx.index as &(dyn ToSql + Sync),
+                    &tx.timestamp.as_str() as &(dyn ToSql + Sync),
+                    &tx.hash.as_str() as &(dyn ToSql + Sync),
+                    &tx.from.as_str() as &(dyn ToSql + Sync),
+                    &tx.to.as_str() as &(dyn ToSql + Sync),
+                    &tx.value.as_str() as &(dyn ToSql + Sync),
+                ])
+                .await?;
+        }
+        writer.as_mut().finish().await?;
+
+        // 3. Bulk insert transfers
+        let sink = client
+            .copy_in("COPY transfers (tx_hash, block_number, token, from_address, to_address, amount) FROM STDIN BINARY")
+            .await?;
+        let types = &[
+            Type::TEXT,
+            Type::INT4,
+            Type::TEXT,
+            Type::TEXT,
+            Type::TEXT,
+            Type::TEXT,
+        ];
+        let writer = BinaryCopyInWriter::new(sink, types);
+        pin_mut!(writer);
+
+        for transfer in transfer_batch {
+            writer
+                .as_mut()
+                .write(&[
+                    &transfer.tx_hash.as_str() as &(dyn ToSql + Sync),
+                    &transfer.block_number as &(dyn ToSql + Sync),
+                    &transfer.token.as_str() as &(dyn ToSql + Sync),
+                    &transfer.from.as_str() as &(dyn ToSql + Sync),
+                    &transfer.to.as_str() as &(dyn ToSql + Sync),
+                    &transfer.amount.as_str() as &(dyn ToSql + Sync),
+                ])
+                .await?;
+        }
+        writer.as_mut().finish().await?;
+
+        // 4. Bulk insert pools
+        let sink = client
+            .copy_in("COPY pools (deployer, address, quote_token, token, init_block, created_at) FROM STDIN BINARY")
+            .await?;
+        let types = &[
+            Type::TEXT,
+            Type::TEXT,
+            Type::TEXT,
+            Type::TEXT,
+            Type::INT4,
+            Type::INT8,
+        ];
+        let writer = BinaryCopyInWriter::new(sink, types);
+        pin_mut!(writer);
+
+        for pool in pool_batch {
+            writer
+                .as_mut()
+                .write(&[
+                    &pool.deployer.as_str() as &(dyn ToSql + Sync),
+                    &pool.address.as_str() as &(dyn ToSql + Sync),
+                    &pool.quote_token.as_str() as &(dyn ToSql + Sync),
+                    &pool.token.as_str() as &(dyn ToSql + Sync),
+                    &pool.init_block as &(dyn ToSql + Sync),
+                    &pool.created_at as &(dyn ToSql + Sync),
+                ])
+                .await?;
+        }
+        writer.as_mut().finish().await?;
+
+        if i % 10 == 0 || i == num_batches - 1 {
+            println!("Processed batch {}/{}", i + 1, num_batches);
+        }
     }
 
     let bulk_insert_duration = start.elapsed();
-    println!("Bulk Insert Test:");
-    println!("  Total records: {}", total_records);
-    println!("  Batch size: {}", batch_size);
-    println!("  Duration: {:?}", bulk_insert_duration);
+    println!("\nBulk Insert Test Results:");
+    println!("-------------------------");
+    println!("Total records processed:");
+    println!("  Blocks: {}", blocks.len());
+    println!("  Transactions: {}", transactions.len());
+    println!("  Transfers: {}", transfers.len());
+    println!("  Pools: {}", pools.len());
+    println!("Total duration: {:?}", bulk_insert_duration);
     println!(
-        "  Average insertion rate: {} records/sec",
-        total_records as f64 / bulk_insert_duration.as_secs_f64()
+        "Average insertion rate: {} records/sec",
+        (blocks.len() + transactions.len() + transfers.len() + pools.len()) as f64
+            / bulk_insert_duration.as_secs_f64()
     );
 
     // 2. Single Record Insert Test
