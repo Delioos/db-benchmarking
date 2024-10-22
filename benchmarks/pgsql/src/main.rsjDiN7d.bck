@@ -1,7 +1,5 @@
 use dotenv::dotenv;
-use futures::pin_mut;
 use native_tls::TlsConnector;
-use postgres::types::ToSql;
 use postgres_native_tls::MakeTlsConnector;
 use serde::Deserialize;
 use serde_json;
@@ -112,58 +110,43 @@ async fn main() -> error::Result<()> {
     println!("in {:?}", duration);
 
     // backtest
-
     // Benchmark Operations
     let start = Instant::now();
 
     // 1. Bulk Insert Test
-    let total_records = blocks.len();
-    let mut batch_size = total_records / 100;
-    if batch_size == 0 {
-        batch_size = 1;
-    }
-    let num_batches = (total_records + batch_size - 1) / batch_size;
+    let batch_size = 1000;
+    let total_records = 100_000;
+    let num_batches = total_records / batch_size;
 
     for i in 0..num_batches {
         let start_index = i * batch_size;
         let end_index = (i + 1) * batch_size;
 
         let block_batch = &blocks[start_index..end_index];
-        let _transaction_batch = &transactions[start_index..end_index];
-        let _transfer_batch = &transfers[start_index..end_index];
-        let _pool_batch = &pools[start_index..end_index];
+        let transaction_batch = &transactions[start_index..end_index];
+        let transfer_batch = &transfers[start_index..end_index];
+        let pool_batch = &pools[start_index..end_index];
 
         // Perform bulk inserts using BinaryCopyInWriter
-        let sink = client.copy_in("COPY blocks (block_number, block_hash, parent_hash, block_timestamp, created_at, updated_at) FROM STDIN BINARY").await?;
-        let types = &[
-            Type::INT4,
-            Type::TEXT,
-            Type::TEXT,
-            Type::TEXT,
-            Type::TEXT,
-            Type::TEXT,
-        ];
-        let writer = BinaryCopyInWriter::new(sink, types);
-
-        pin_mut!(writer);
-
+        let mut writer = BinaryCopyInWriter::new(
+            client.copy_in("COPY blocks (block_number, block_hash, parent_hash, block_timestamp, created_at, updated_at) FROM STDIN BINARY").await?,
+            &[Type::TEXT, Type::TEXT, Type::TEXT, Type::TIMESTAMP, Type::TIMESTAMP, Type::TIMESTAMP],
+        );
         for block in block_batch {
             writer
-                .as_mut()
                 .write(&[
-                    &block.block_number as &(dyn ToSql + Sync),
-                    &block.block_hash.as_str() as &(dyn ToSql + Sync),
-                    &block.parent_hash.as_str() as &(dyn ToSql + Sync),
-                    &block.block_timestamp.as_str() as &(dyn ToSql + Sync),
-                    &block.created_at.as_str() as &(dyn ToSql + Sync),
-                    &block.updated_at.as_str() as &(dyn ToSql + Sync),
+                    &block.block_number,
+                    &block.block_hash,
+                    &block.parent_hash,
+                    &block.block_timestamp,
+                    &block.created_at,
+                    &block.updated_at,
                 ])
                 .await?;
         }
-        writer.as_mut().finish().await?;
+        writer.finish().await?;
 
         // Repeat the process for transactions, transfers, and pools
-        // ...
     }
 
     let bulk_insert_duration = start.elapsed();
@@ -175,15 +158,6 @@ async fn main() -> error::Result<()> {
         "  Average insertion rate: {} records/sec",
         total_records as f64 / bulk_insert_duration.as_secs_f64()
     );
-
-    // 2. Single Record Insert Test
-    // ...
-
-    // 3. Read-Write Mixed Workload Test
-    // ...
-
-    // 4. Time-Range Query Test
-    // ...
 
     Ok(())
 }
