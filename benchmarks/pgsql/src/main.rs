@@ -49,6 +49,12 @@ async fn main() -> error::Result<()> {
             eprintln!("Database connection error: {}", e);
         }
     });
+    // Now we can execute a simple statement that just returns its parameter.
+    let rows = client.query("SELECT $1::TEXT", &[&"hello world"]).await?;
+
+    // And then check that we got back the same string we sent over.
+    let value: &str = rows[0].get(0);
+    assert_eq!(value, "hello world");
 
     // Create tables if they don't exist
     match schema::create_tables(&mut client).await {
@@ -56,12 +62,7 @@ async fn main() -> error::Result<()> {
         Err(e) => return Err(e),
     }
 
-    // Now we can execute a simple statement that just returns its parameter.
-    let rows = client.query("SELECT $1::TEXT", &[&"hello world"]).await?;
-
-    // And then check that we got back the same string we sent over.
-    let value: &str = rows[0].get(0);
-    assert_eq!(value, "hello world");
+    todo!();
 
     let start = Instant::now();
     // Load blocks from JSON file
@@ -139,9 +140,9 @@ async fn main() -> error::Result<()> {
             Type::INT4,
             Type::TEXT,
             Type::TEXT,
-            Type::TIMESTAMP,
-            Type::TIMESTAMP,
-            Type::TIMESTAMP,
+            Type::TEXT,
+            Type::TEXT,
+            Type::TEXT,
         ];
         let writer = BinaryCopyInWriter::new(sink, types);
 

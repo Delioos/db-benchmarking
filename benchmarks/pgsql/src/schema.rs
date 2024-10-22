@@ -2,8 +2,10 @@ use crate::error::Result;
 use tokio_postgres::Client;
 
 pub async fn create_tables(client: &mut Client) -> Result<()> {
-    client.execute(
-        "CREATE TABLE IF NOT EXISTS blocks (
+    println!("creating tables ... ");
+    client
+        .execute(
+            "CREATE TABLE IF NOT EXISTS blocks (
             id SERIAL PRIMARY KEY,
             block_number INTEGER NOT NULL,
             block_hash TEXT NOT NULL,
@@ -12,11 +14,13 @@ pub async fn create_tables(client: &mut Client) -> Result<()> {
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL
         )",
-        &[],
-    );
+            &[],
+        )
+        .await?;
 
-    client.execute(
-        "CREATE TABLE IF NOT EXISTS transactions (
+    client
+        .execute(
+            "CREATE TABLE IF NOT EXISTS transactions (
             id SERIAL PRIMARY KEY,
             block INTEGER NOT NULL,
             index INTEGER NOT NULL,
@@ -26,11 +30,13 @@ pub async fn create_tables(client: &mut Client) -> Result<()> {
             to_address TEXT NOT NULL,
             value TEXT NOT NULL
         )",
-        &[],
-    );
+            &[],
+        )
+        .await?;
 
-    client.execute(
-        "CREATE TABLE IF NOT EXISTS transfers (
+    client
+        .execute(
+            "CREATE TABLE IF NOT EXISTS transfers (
             id SERIAL PRIMARY KEY,
             tx_hash TEXT NOT NULL,
             block_number INTEGER NOT NULL,
@@ -39,11 +45,13 @@ pub async fn create_tables(client: &mut Client) -> Result<()> {
             to_address TEXT NOT NULL,
             amount TEXT NOT NULL
         )",
-        &[],
-    );
+            &[],
+        )
+        .await?;
 
-    client.execute(
-        "CREATE TABLE IF NOT EXISTS s (
+    client
+        .execute(
+            "CREATE TABLE IF NOT EXISTS pools (
             id SERIAL PRIMARY KEY,
             deployer TEXT NOT NULL,
             address TEXT NOT NULL,
@@ -52,8 +60,9 @@ pub async fn create_tables(client: &mut Client) -> Result<()> {
             init_block INTEGER NOT NULL,
             created_at BIGINT NOT NULL
         )",
-        &[],
-    );
+            &[],
+        )
+        .await?;
 
     Ok(())
 }
