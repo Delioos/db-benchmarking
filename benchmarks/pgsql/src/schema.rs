@@ -8,9 +8,9 @@ pub async fn create_tables(client: &mut Client) -> Result<()> {
             block_number INTEGER NOT NULL,
             block_hash TEXT NOT NULL,
             parent_hash TEXT NOT NULL,
-            block_timestamp TIMESTAMPTZ NOT NULL,
-            created_at TIMESTAMPTZ NOT NULL,
-            updated_at TIMESTAMPTZ NOT NULL
+            block_timestamp TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
         )",
         &[],
     );
@@ -20,7 +20,7 @@ pub async fn create_tables(client: &mut Client) -> Result<()> {
             id SERIAL PRIMARY KEY,
             block INTEGER NOT NULL,
             index INTEGER NOT NULL,
-            timestamp TIMESTAMPTZ NOT NULL,
+            timestamp TEXT NOT NULL,
             hash TEXT NOT NULL,
             from_address TEXT NOT NULL,
             to_address TEXT NOT NULL,

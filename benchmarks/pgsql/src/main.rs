@@ -139,13 +139,15 @@ async fn main() -> error::Result<()> {
             Type::INT4,
             Type::TEXT,
             Type::TEXT,
-            Type::TEXT,
-            Type::TEXT,
-            Type::TEXT,
+            Type::TIMESTAMP,
+            Type::TIMESTAMP,
+            Type::TIMESTAMP,
         ];
         let writer = BinaryCopyInWriter::new(sink, types);
 
         pin_mut!(writer);
+
+        // prepare data
 
         for block in block_batch {
             writer
